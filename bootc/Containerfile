@@ -1,0 +1,37 @@
+# Written by Ben
+
+# Latest Fedora version as of writing
+
+FROM quay.io/fedora/fedora-bootc:43
+
+# Install base packages, enable docker, qemu-guest-agent, and tailscale
+RUN dnf install -y neovim && \
+    dnf install -y fastfetch btop nfs-utils cifs-utils && \
+    dnf -y install dnf-plugins-core && \
+    dnf-3 config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo && \
+    dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin && \
+    dnf-3 config-manager --add-repo https://pkgs.tailscale.com/stable/fedora/tailscale.repo && \
+    dnf install -y tailscale && \
+    dnf install -y qemu-guest-agent && \
+    dnf install -y https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm && \
+    dnf install -y akmod-nvidia xorg-x11-drv-nvidia-cuda nvtop && \
+    dnf-3 config-manager --add-repo https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo && \
+    dnf clean all
+ARG export NVIDIA_CONTAINER_TOOLKIT_VERSION=1.18.0-1
+# Bug raised with Nvidia Container Toolkit makes Fedora 43 report "no digest" when installing: https://github.com/NVIDIA/nvidia-container-toolkit/issues/1307
+# Workaround is to temporarily disable verification
+RUN echo "%_pkgverify_level none" >/etc/rpm/macros.verify
+RUN dnf install -y \
+    nvidia-container-toolkit-$NVIDIA_CONTAINER_TOOLKIT_VERSION \
+    nvidia-container-toolkit-base-$NVIDIA_CONTAINER_TOOLKIT_VERSION \
+    libnvidia-container-tools-$NVIDIA_CONTAINER_TOOLKIT_VERSION \
+    libnvidia-container1-$NVIDIA_CONTAINER_TOOLKIT_VERSION && \
+    dnf clean all
+# Restore verification
+RUN rm /etc/rpm/macros.verify
+RUN systemctl enable docker && \
+    systemctl enable tailscaled && \
+    systemctl enable qemu-guest-agent
+RUN bootc container lint
+
+
