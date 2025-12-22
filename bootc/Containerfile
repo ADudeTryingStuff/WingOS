@@ -33,5 +33,3 @@ RUN systemctl enable docker && \
     systemctl enable tailscaled && \
     systemctl enable qemu-guest-agent
 RUN bootc container lint
-
-
