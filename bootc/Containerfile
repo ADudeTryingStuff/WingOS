@@ -32,4 +32,11 @@ RUN rm /etc/rpm/macros.verify
 RUN systemctl enable docker && \
     systemctl enable tailscaled && \
     systemctl enable qemu-guest-agent
+# Masking the akmods-keygen.service
+RUN mkdir -p /etc/systemd/system/akmods-keygen@.service.d && \
+    cat >/etc/systemd/system/akmods-keygen@.service.d/disable.conf <<'EOF'
+[Unit]
+ConditionPathExists=!/lib/modules/*
+EOF
+RUN systemctl mask akmods-keygen@.service || true
 RUN bootc container lint
